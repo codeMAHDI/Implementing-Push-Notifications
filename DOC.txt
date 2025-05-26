@@ -1,0 +1,5 @@
+1. what is firebase push notification?
+Firebase Push Notification refers to sending messages from Firebase
+to users' devices using Firebase Cloud Messaging (FCM).
+It allows you to notify users even when the app is closed or in the background.
+2.

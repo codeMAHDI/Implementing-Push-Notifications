@@ -1,5 +1,85 @@
-1. what is firebase push notification?
+1.what is firebase push notification?
 Firebase Push Notification refers to sending messages from Firebase
 to users' devices using Firebase Cloud Messaging (FCM).
 It allows you to notify users even when the app is closed or in the background.
-2.
+2.(firebase_core: ^3.13.1) the initial sdk for using firebase. Then for push  notification we need this package->
+(firebase_messaging: ^15.2.6)
+3.Then initialize firebase.
+4.Now lets create a Cubit class for notification state->
+First we need model->
+class NotificationState{
+  final String deviceToken;
+  final String message;
+  NotificationState({required this.deviceToken, required this.message});
+}
+Now lets make Cubit->
+class NotificationCubit extends Cubit<NotificationState>{//We'll work with NotificationState data model
+  NotificationCubit():super(NotificationState(deviceToken: "", message: ""));
+  FirebaseMessaging messaging=FirebaseMessaging.instance;//Device token will came from firebase . That's why we need this instance
+
+  //To get the device token
+  Future<void> getDeviceToken() async{
+    String? token= await messaging.getToken();//Device token can be null
+    emit(NotificationState(deviceToken: token??"No Token", message: state.message));
+  }
+}
+Now lets use this getDeviceToken() method->
+lets read the notification token is it's arrived or not->
+
+class MyHomePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // Execute Get Token
+    context.read<NotificationCubit>().getDeviceToken();
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("This is FCM"),
+      ),
+      body: BlocBuilder<NotificationCubit, NotificationState>(
+          builder: (context, state){
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text("Device Token: ${state.deviceToken} "),//We'll get the token from the state
+                  const SizedBox(height: 20,),
+                  Text("Notification Msg:${state.message} "),
+                ],
+              ),
+            );
+          }
+      )
+    );
+  }
+}
+Then go to Compose notification and publish a msg. But for that we need a
+msg received method inside Cubit class->
+  void handleForegroundMessage(RemoteMessage message){
+    emit(NotificationState(deviceToken: state.deviceToken, message: message.notification?.title?? "No title Found"));
+  }
+  void handleNotificationOpened(RemoteMessage message){
+    emit(NotificationState(deviceToken: state.deviceToken, message: "Notification Clicked"));
+  }
+Now we need initialize the background msg.
+So inside void main->
+  // initialize background message
+  FirebaseMessaging messaging=FirebaseMessaging.instance;
+  await messaging.requestPermission();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  Now we've tto create backgroud msg handler (firebaseMessagingBackgroundHandler)->
+  Outside of runApp->
+  // Background Msg Manager
+  Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async{
+      print("Background Msg Manager ${message.messageId}");
+  }
+  Then inside build we've to execute->
+
+    // Listen for incoming notifications
+    FirebaseMessaging.onMessage.listen((RemoteMessage message){
+      context.read<NotificationCubit>().handleForegroundMessage(message);
+    });
+
+    // Listen for notification click
+    FirebaseMessaging.onMessage.listen((RemoteMessage message){
+      context.read<NotificationCubit>().handleNotificationOpened(message);
+    });

@@ -10,8 +10,8 @@ First we need model->
 class NotificationState{
   final String deviceToken;
   final String message;
-  NotificationState({required this.deviceToken, required this.message});
-}
+  NotificationState({required this.deviceToken, required this.message});}
+
 Now lets make Cubit->
 class NotificationCubit extends Cubit<NotificationState>{//We'll work with NotificationState data model
   NotificationCubit():super(NotificationState(deviceToken: "", message: ""));
